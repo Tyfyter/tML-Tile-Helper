@@ -2,24 +2,26 @@
 using System.Collections;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace Tyfyter.tML_Tile_Helper {
     public class TML_Tile_Helper {
         static Color transparency = Color.Magenta;
         static bool noDirtMerge = false;
+        static bool manualDirtMerge = false;
         public static void Main(string[] args) {
             int mode = -1;
-            string filename1 = "";
-            string filename2 = "";
-            string filename3 = "";
+            string filename1 = null;
+            string filename2 = null;
+            string filename3 = null;
             string outputFile = null;
             foreach (string arg in args) {
                 if (mode == -1) {
                     switch (arg.Replace("-", "")) {
                         case "helk":
                         case "help":
-                        Console.WriteLine("help menu coming soon");
+                        Console.WriteLine("Syntax: [-all file path] [-part1 file path] [-part2 file path] [-part3 file path] [-output file path] [-transparency hex code] [-noDirtMerge] [-manualDirtMerge]");
                         return;
                         case "all":
                         mode = 0;
@@ -41,6 +43,9 @@ namespace Tyfyter.tML_Tile_Helper {
                         break;
                         case "noDirtMerge":
                         noDirtMerge = true;
+                        break;
+                        case "manualDirtMerge":
+                        manualDirtMerge = true;
                         break;
                     }
                 } else {
@@ -69,11 +74,22 @@ namespace Tyfyter.tML_Tile_Helper {
                     mode = -1;
                 }
             }
+            if (filename1 is null) {
+                try {
+                    new FileInfo(args[0]);
+                    filename1 = args[0];
+                    filename2 = args[0];
+                    filename3 = args[0];
+                } catch(Exception) {
+                    Console.WriteLine("invalid input: "+string.Join(" ", args));
+                    return;
+                }
+            }
             ProcessImages(filename1, filename2, filename3, outputFile??(Regex.Replace(filename1, "\\.[^.]*$", "") +"_Sheet.png"));
         }
         public delegate void DrawAt(int x, int y);
         public static void ProcessImages(string file1, string file2, string file3, string outputName) {
-            ImageSet[] images = {new ImageSet(file1),new ImageSet(file2),new ImageSet(file3)};
+            ImageSet[] images = {new ImageSet(file1), new ImageSet(file2), new ImageSet(file3)};
             int width = 288;
             int height = noDirtMerge ? 90 : 270;
             Bitmap output = new Bitmap(width, height);
@@ -386,8 +402,10 @@ namespace Tyfyter.tML_Tile_Helper {
                         i++;
                     }
                 }
+                if (!manualDirtMerge && !noDirtMerge) {
+                    g.DrawImage(Properties.Resources.Dirt_Merge, new Point());
+                }
             }
-
             output.MakeTransparent(transparency);
 
             output.Save(outputName);
@@ -401,21 +419,9 @@ namespace Tyfyter.tML_Tile_Helper {
         public Bitmap Border => borderImage;
         public Bitmap Edge => edgeImage;
         public ImageSet(string baseName, string borderName = null, string edgeName = null) {
-            try {
-                baseImage = (Bitmap)Image.FromFile(baseName + ".png");
-            } catch (Exception) {
-                baseImage = new Bitmap(0,0);
-            }
-            try {
-                borderImage = (Bitmap)Image.FromFile(borderName ?? (baseName + "_Border.png"));
-            } catch (Exception) {
-                borderImage = new Bitmap(0,0);
-            }
-            try {
-                edgeImage = (Bitmap)Image.FromFile(edgeName??(baseName + "_Edge.png"));
-            } catch (Exception) {
-                edgeImage = new Bitmap(0,0);
-            }
+            baseImage = (Bitmap)Image.FromFile(Path.ChangeExtension(baseName, ".png"));
+            borderImage = (Bitmap)Image.FromFile(Path.ChangeExtension(borderName ?? (baseName + "_Border"), ".png"));
+            edgeImage = (Bitmap)Image.FromFile(Path.ChangeExtension(edgeName ??(baseName + "_Edge"), ".png"));
         }
     }
 }

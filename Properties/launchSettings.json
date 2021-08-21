@@ -1,7 +1,8 @@
 {
   "profiles": {
     "tML Tile Helper": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "-all _Test_Image"
     }
   }
 }
